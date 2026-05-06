@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TERE · Administrar Sedes</title>
+<style>
+:root{--bg:#0b0d11;--bg2:#12151a;--accent:#4dabff;--green:#40e0d0;--red:#ff5e7e;--text:#d8dee9;--muted:#717b91}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+header{background:var(--bg2);border-bottom:2px solid var(--accent);padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:20px;font-weight:700;color:var(--accent)}
+.nav-links{display:flex;gap:6px}
+.nav-btn{padding:6px 14px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase;text-decoration:none;cursor:pointer;border:1px solid #2d3544;background:#1a1e26;color:var(--muted);transition:all .15s}
+.nav-btn:hover{border-color:var(--accent);color:var(--accent)}
+.nav-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+.content{flex:1;padding:24px;display:flex;flex-direction:column;gap:20px;max-width:1100px;margin:0 auto;width:100%}
+.page-title{font-size:18px;font-weight:700;color:var(--accent);border-bottom:1px solid #2d3544;padding-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+input,select{width:100%;background:var(--bg);border:1px solid #2d3544;border-radius:4px;padding:10px;color:var(--text);font-size:14px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}
+.btn{padding:10px 18px;border:none;border-radius:4px;font-weight:700;cursor:pointer;font-size:12px;text-transform:uppercase}
+.btn-p{background:var(--accent);color:#000}.btn-d{background:transparent;color:var(--red);border:1px solid var(--red)}
+.btn-sm{padding:6px 12px;font-size:10px}
+.lbl{font-size:10px;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.card{background:var(--bg2);border:1px solid #2d3544;border-radius:8px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.card-header{font-size:14px;font-weight:700;color:var(--accent);border-bottom:1px solid #2d3544;padding-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.sede-list{display:flex;flex-direction:column;gap:8px;max-height:340px;overflow-y:auto}
+.sede-item{background:var(--bg);border:1px solid #2d3544;border-radius:6px;padding:14px;display:flex;justify-content:space-between;align-items:center;transition:all .15s}
+.sede-item:hover{border-color:var(--accent)}
+.sede-info{display:flex;flex-direction:column;gap:4px}
+.sede-name{font-weight:700;color:var(--text);font-size:14px}
+.sede-meta{color:var(--muted);font-size:11px}
+.sede-actions{display:flex;gap:6px}
+.status-badge{display:inline-block;font-size:10px;text-transform:uppercase;font-weight:700;padding:3px 8px;border-radius:4px;margin-left:8px}
+.status-active{background:rgba(64,224,208,.15);color:var(--green)}
+.status-inactive{background:rgba(255,94,126,.15);color:var(--red)}
+#toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border-left:4px solid var(--accent);padding:14px 20px;font-size:12px;display:none;z-index:1000}
+#toast.success{border-color:var(--green)}#toast.error{border-color:var(--red)}
+.form-row{display:flex;gap:8px;align-items:end}
+.form-row>div{flex:1}
+.empty-state{text-align:center;padding:30px;color:var(--muted);font-size:13px}
+@media(max-width:700px){.grid-2{grid-template-columns:1fr}.form-row{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">TERE · <span style="color:var(--muted);font-size:13px">Administración</span></div>
+  <nav class="nav-links">
+    <a class="nav-btn" href="index.html">Kiosco</a>
+    <a class="nav-btn" href="pension.html">＋ Pensión</a>
+    <a class="nav-btn" href="cliente.html">Cliente</a>
+    <a class="nav-btn" href="registros.html">Registros</a>
+    <a class="nav-btn active" href="sedes.html">Sedes</a>
+  </nav>
+  <div id="clock" style="color:var(--accent)">--</div>
+</header>
+
+<div class="content">
+
+  <div class="page-title">
+    <span>⚙️ Administrar Sedes</span>
+    <span style="font-size:11px;color:var(--muted);font-weight:400" id="total-sedes">-- sedes</span>
+  </div>
+
+  <div class="grid-2">
+    <!-- Formulario para crear / editar -->
+    <div class="card">
+      <div class="card-header">
+        <span id="form-title">➕ Nueva Sede</span>
+        <button class="btn btn-d btn-sm" id="btn-cancelar" style="display:none" onclick="cancelarEdicion()">Cancelar</button>
+      </div>
+      <div><div class="lbl">Nombre de la sede</div><input type="text" id="sede-nombre-input" placeholder="Ej: Zona Plaza"></div>
+      <div><div class="lbl">Dirección</div><input type="text" id="sede-direccion" placeholder="Calle, número, colonia"></div>
+      <div><div class="lbl">Teléfono</div><input type="text" id="sede-telefono" placeholder="2721234567"></div>
+      <div class="form-row">
+        <div><div class="lbl">Tarifa por hora ($)</div><input type="number" id="sede-tarifa" placeholder="20" min="0" step="0.5"></div>
+        <div><div class="lbl">Total cajones</div><input type="number" id="sede-cajones" placeholder="24" min="1" max="200"></div>
+      </div>
+      <div><div class="lbl">Estado</div><select id="sede-estado"><option value="ACTIVA">Activa</option><option value="INACTIVA">Inactiva</option></select></div>
+      <button class="btn btn-p" id="btn-guardar" onclick="guardarSede()">REGISTRAR SEDE</button>
+      <input type="hidden" id="sede-id-edit">
+    </div>
+
+    <!-- Lista de sedes -->
+    <div class="card">
+      <div class="card-header">📋 Sedes registradas</div>
+      <div class="sede-list" id="sede-list">
+        <div class="empty-state">Cargando sedes...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<div id="toast"></div>
+
+<script>
+const API='https://jellyfish-app-b5lgm.ondigitalocean.app';
+const apiHeaders={'Content-Type':'application/json','ngrok-skip-browser-warning':'true'};
+let sedes=[],editandoId=null;
+
+setInterval(()=>document.getElementById('clock').textContent=new Date().toLocaleTimeString('es-MX',{hour12:false}),1000);
+
+function toast(m,t='info'){const e=document.getElementById('toast');e.textContent=m;e.className=t;e.style.display='block';setTimeout(()=>e.style.display='none',2500)}
+
+async function api(path,options={}){
+  const headers={...apiHeaders,...(options.headers||{})};
+  Object.keys(headers).forEach(k=>headers[k]===undefined&&delete headers[k]);
+  const r=await fetch(`${API}${path}`,{...options,headers});
+  if(!r.ok){let msg=`HTTP ${r.status}`;try{const d=await r.json();msg=d.message||d.mensaje||JSON.stringify(d)}catch(e){}throw new Error(msg)}
+  if(r.status===204)return null;
+  const text=await r.text();if(!text)return null;
+  try{return JSON.parse(text)}catch(e){return text}
+}
+
+function renderSedes(){
+  const box=document.getElementById('sede-list');
+  document.getElementById('total-sedes').textContent=sedes.length+' sedes';
+  if(!sedes.length){box.innerHTML='<div class="empty-state">✨ No hay sedes registradas. Crea la primera.</div>';return}
+  box.innerHTML=sedes.map(s=>{
+    const activa=!s.estado||s.estado==='ACTIVA';
+    return `
+    <div class="sede-item">
+      <div class="sede-info">
+        <div class="sede-name">🏢 ${s.nombre||'Sin nombre'} <span class="status-badge ${activa?'status-active':'status-inactive'}">${activa?'Activa':'Inactiva'}</span></div>
+        <div class="sede-meta">📍 ${s.direccion||'Sin dirección'} · 📞 ${s.telefono||'--'}</div>
+        <div class="sede-meta">💰 Tarifa: $${s.tarifaHora||s.montoHora||'?'}/h · 🅿️ ${s.totalCajones||'?'} cajones · ID: ${s.idSede||s.id||'--'}</div>
+      </div>
+      <div class="sede-actions">
+        <button class="btn btn-p btn-sm" onclick="editarSede(${s.idSede||s.id})">✏️ Editar</button>
+        <button class="btn btn-d btn-sm" onclick="eliminarSede(${s.idSede||s.id})">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function cargarSedes(){
+  try{
+    sedes=await api('/api/sedes',{headers:{'Content-Type':undefined}})||[];
+    renderSedes();
+  }catch(e){
+    document.getElementById('sede-list').innerHTML='<div class="empty-state" style="color:var(--red)">❌ Error al cargar sedes</div>';
+    console.error(e);
+  }
+}
+
+function cancelarEdicion(){
+  editandoId=null;
+  document.getElementById('sede-id-edit').value='';
+  ['sede-nombre-input','sede-direccion','sede-telefono','sede-tarifa','sede-cajones'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('sede-estado').value='ACTIVA';
+  document.getElementById('form-title').textContent='➕ Nueva Sede';
+  document.getElementById('btn-guardar').textContent='REGISTRAR SEDE';
+  document.getElementById('btn-cancelar').style.display='none';
+}
+
+function editarSede(id){
+  const s=sedes.find(x=>(x.idSede||x.id)===id);
+  if(!s)return toast('Sede no encontrada','error');
+  editandoId=id;
+  document.getElementById('sede-id-edit').value=id;
+  document.getElementById('sede-nombre-input').value=s.nombre||'';
+  document.getElementById('sede-direccion').value=s.direccion||'';
+  document.getElementById('sede-telefono').value=s.telefono||'';
+  document.getElementById('sede-tarifa').value=s.tarifaHora||s.montoHora||'';
+  document.getElementById('sede-cajones').value=s.totalCajones||'';
+  document.getElementById('sede-estado').value=s.estado||'ACTIVA';
+  document.getElementById('form-title').textContent='✏️ Editar Sede';
+  document.getElementById('btn-guardar').textContent='GUARDAR CAMBIOS';
+  document.getElementById('btn-cancelar').style.display='inline-block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function guardarSede(){
+  const nombre=document.getElementById('sede-nombre-input').value.trim();
+  const direccion=document.getElementById('sede-direccion').value.trim();
+  const telefono=document.getElementById('sede-telefono').value.trim();
+  const tarifa=parseFloat(document.getElementById('sede-tarifa').value)||0;
+  const totalCajones=parseInt(document.getElementById('sede-cajones').value)||0;
+  const estado=document.getElementById('sede-estado').value;
+  if(!nombre)return toast('El nombre de la sede es obligatorio','error');
+  if(!direccion)return toast('La dirección es obligatoria','error');
+  if(tarifa<=0)return toast('La tarifa debe ser mayor a 0','error');
+  if(totalCajones<1)return toast('Total de cajones mínimo 1','error');
+
+  const body={nombre,direccion,telefono,tarifaHora:tarifa,totalCajones,estado};
+
+  try{
+    if(editandoId){
+      await api(`/api/sedes/${editandoId}`,{method:'PUT',body:JSON.stringify(body)});
+      toast('✅ Sede actualizada','success');
+    }else{
+      await api('/api/sedes',{method:'POST',body:JSON.stringify(body)});
+      toast('✅ Sede creada','success');
+    }
+    cancelarEdicion();
+    await cargarSedes();
+  }catch(e){toast(e.message||'Error al guardar sede','error')}
+}
+
+async function eliminarSede(id){
+  const s=sedes.find(x=>(x.idSede||x.id)===id);
+  if(!s)return;
+  if(!confirm(`¿Eliminar la sede "${s.nombre}"?\nEsta acción no se puede deshacer.`))return;
+  try{
+    await api(`/api/sedes/${id}`,{method:'DELETE'});
+    toast('🗑️ Sede eliminada','success');
+    if(editandoId===id)cancelarEdicion();
+    await cargarSedes();
+  }catch(e){toast(e.message||'No se pudo eliminar','error')}
+}
+
+// Init
+cargarSedes();
+</script>
+</body>
+</html>
